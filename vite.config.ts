@@ -4,17 +4,24 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
+
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
     },
   },
+
   server: {
     port: 5173,
     open: true,
   },
+
   build: {
     outDir: 'dist',
+
+    // 🔥 Fix chunk warning
+    chunkSizeWarningLimit: 1000,
+
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -23,11 +30,15 @@ export default defineConfig({
             if (id.includes('recharts')) return 'charts';
             if (id.includes('i18next')) return 'i18n';
             if (id.includes('react-dom') || id.includes('react-router')) return 'vendor';
+
+            // ✅ Catch-all for remaining node_modules
+            return 'vendor';
           }
         },
       },
     },
   },
+
   optimizeDeps: {
     include: ['leaflet', 'react-leaflet', 'recharts', 'date-fns'],
   },
