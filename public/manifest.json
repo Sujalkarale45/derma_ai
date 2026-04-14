@@ -1,0 +1,32 @@
+{
+  "name": "DERMA AI",
+  "short_name": "DermaAI",
+  "description": "AI-powered skin lesion analysis and telemedicine for rural India",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#1D9E75",
+  "background_color": "#F8F7F4",
+  "categories": ["medical", "health"],
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%231D9E75'/%3E%3Ctext y='0.9em' x='50%25' font-size='55' text-anchor='middle' fill='%23fff' font-family='Arial' font-weight='bold'%3EDA%3C/text%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Upload Scan",
+      "url": "/patient/upload-scan",
+      "description": "Upload a skin image for AI analysis"
+    },
+    {
+      "name": "Book Appointment",
+      "url": "/patient/book",
+      "description": "Schedule a dermatologist consultation"
+    }
+  ]
+}
