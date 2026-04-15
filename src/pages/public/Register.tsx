@@ -91,7 +91,7 @@ export default function Register() {
               boxShadow: role === r ? 'var(--shadow-sm)' : 'none',
               transition: 'all var(--transition-fast)',
             }}>
-              {r === 'patient' ? '🧑 Patient' : '👨‍⚕️ Doctor'}
+              {r === 'patient' ? 'Patient' : 'Doctor'}
             </button>
           ))}
         </div>
@@ -107,7 +107,7 @@ export default function Register() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">{t('auth.name')} <span className="required">*</span></label>
-                <input type="text" required className="form-input" placeholder="Priya Sharma" {...inputProps('name')} />
+                <input type="text" required className="form-input" placeholder="Riya Sharma" {...inputProps('name')} />
               </div>
 
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>

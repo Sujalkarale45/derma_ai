@@ -94,7 +94,7 @@ export default function VideoCall({
       });
       peerRef.current = peer;
 
-      peer.on('error', (err) => {
+      peer.on('error', (err: Error & { type?: string }) => {
         // ID taken (already open in another tab) → destroy & retry once with suffix
         if (err.type === 'unavailable-id') {
           toast.error('Room code already in use. Regenerate and try again.');
@@ -105,10 +105,10 @@ export default function VideoCall({
       });
 
       // Doctor will call us
-      peer.on('call', (incomingCall) => {
+      peer.on('call', (incomingCall: MediaConnection) => {
         callRef.current = incomingCall;
         incomingCall.answer(stream);
-        incomingCall.on('stream', (remoteStream) => {
+        incomingCall.on('stream', (remoteStream: MediaStream) => {
           attachStream(remoteVideoRef, remoteStream);
           setStatus('connected');
           startTimer();
@@ -153,7 +153,7 @@ export default function VideoCall({
         const call = peer.call(roomId, stream);
         callRef.current = call;
 
-        call.on('stream', (remoteStream) => {
+        call.on('stream', (remoteStream: MediaStream) => {
           attachStream(remoteVideoRef, remoteStream);
           setStatus('connected');
           startTimer();

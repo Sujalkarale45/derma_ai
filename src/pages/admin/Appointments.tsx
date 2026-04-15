@@ -4,7 +4,7 @@ import Badge from '../../components/ui/Badge';
 import type { AppointmentStatus } from '../../types';
 
 const ALL = [
-  {id:'a1',patient:'Priya Sharma',doctor:'Dr. Rajesh Kulkarni',slot:'2026-04-16T10:00:00',status:'confirmed' as AppointmentStatus},
+  {id:'a1',patient:'Riya Sharma',doctor:'Dr. Rajesh Kulkarni',slot:'2026-04-16T10:00:00',status:'confirmed' as AppointmentStatus},
   {id:'a2',patient:'Ramesh Jadhav',doctor:'Dr. Sunita Joshi',slot:'2026-04-16T11:30:00',status:'pending' as AppointmentStatus},
   {id:'a3',patient:'Kavitha Nair',doctor:'Dr. Priyanka Desai',slot:'2026-04-14T14:00:00',status:'completed' as AppointmentStatus},
   {id:'a4',patient:'Sunil Patil',doctor:'Dr. Amol Patil',slot:'2026-04-10T15:00:00',status:'no-show' as AppointmentStatus},

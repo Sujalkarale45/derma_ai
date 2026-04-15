@@ -60,7 +60,7 @@ export default function AdminDoctors() {
                 </div>
                 <p style={{fontSize:'var(--font-size-sm)',color:'var(--primary)',marginBottom:'0.25rem'}}>{doc.specialisation}</p>
                 <p style={{fontSize:'var(--font-size-xs)',color:'var(--text-muted)'}}>Reg: {doc.reg} · {doc.city} · Applied: {doc.applied}</p>
-                {doc.verified && <p style={{fontSize:'var(--font-size-xs)',color:'var(--text-muted)',marginTop:'0.25rem'}}>⭐ {doc.rating} · {doc.patients} patients</p>}
+                {doc.verified && <p style={{fontSize:'var(--font-size-xs)',color:'var(--text-muted)',marginTop:'0.25rem'}}>Rating: {doc.rating} · {doc.patients} patients</p>}
               </div>
               <div style={{display:'flex',gap:'0.5rem'}}>
                 <Button size="sm" variant="ghost" icon={<Eye size={13}/>}>View</Button>

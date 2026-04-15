@@ -156,7 +156,7 @@ export default function FindDoctor() {
                         <p style={{ fontSize: '0.75rem', color: '#666' }}>{doc.specialisation}</p>
                       </div>
                     </div>
-                    <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem' }}>⭐ {doc.rating} · {doc.city}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem' }}>Rating: {doc.rating} · {doc.city}</p>
                     <a href="/patient/book" style={{
                       display: 'block', textAlign: 'center', padding: '0.375rem',
                       background: '#1D9E75', color: 'white', borderRadius: '6px',

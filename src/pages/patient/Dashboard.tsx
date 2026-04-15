@@ -48,10 +48,10 @@ export default function PatientDashboard() {
           {t('dashboard.welcomeBack')}
         </p>
         <h2 style={{ color: 'white', fontFamily: 'var(--font-heading)', marginBottom: '0.375rem' }}>
-          {user?.name?.split(' ')[0] ?? 'Patient'} 👋
+          {user?.name?.split(' ')[0] ?? 'Patient'}
         </h2>
         <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 'var(--font-size-sm)' }}>
-          📍 {user?.location ?? 'India'} · {format(new Date(), 'EEEE, dd MMMM yyyy')}
+          {user?.location ?? 'Nagpur, Maharashtra'} · {format(new Date(), 'EEEE, dd MMMM yyyy')}
         </p>
       </div>
 

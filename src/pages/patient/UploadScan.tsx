@@ -9,14 +9,15 @@ import type { AIScan } from '../../types';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
-import { Upload, AlertTriangle, Download, Share2, Calendar, ImageIcon, CheckCircle, Info } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Upload, AlertTriangle, Download, Share2, Calendar, ImageIcon, Info, Video } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
 export default function UploadScan() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const navigate = useNavigate();
 
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -59,6 +60,8 @@ export default function UploadScan() {
         risk_level: riskLevel,
       };
       setResult(scan);
+      // Store for the Consult page to pick up
+      try { sessionStorage.setItem('dermaai_last_scan', JSON.stringify(scan)); } catch {/* ignore */}
       toast.success('Analysis complete!');
     } catch (err) {
       toast.error('Analysis failed. Please try again.');
@@ -200,7 +203,7 @@ export default function UploadScan() {
                 <div style={{ textAlign: 'right' }}>
                   <Badge variant={result.risk_level} dot style={{ fontSize: '0.8rem', padding: '0.375rem 0.75rem' }}>
                     {result.risk_level === 'high' ? '⚠ HIGH RISK' :
-                     result.risk_level === 'moderate' ? '⚡ MODERATE' : '✓ LOW RISK'}
+                     result.risk_level === 'moderate' ? 'MODERATE' : 'LOW RISK'}
                   </Badge>
                   <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                     {t('scan.confidence')}: <strong>{(result.confidence * 100).toFixed(1)}%</strong>
@@ -258,9 +261,34 @@ export default function UploadScan() {
               ))}
             </div>
 
+            {/* Confidence threshold warning */}
+            {result.confidence < 0.60 && (
+              <div style={{
+                background: 'var(--warning-light)', border: '1px solid var(--warning)',
+                borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem',
+                display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '1.25rem',
+              }}>
+                <AlertTriangle size={14} color="var(--warning)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: '#7a5200', fontWeight: 700, marginBottom: '0.25rem' }}>
+                    Low Confidence — {(result.confidence * 100).toFixed(1)}%
+                  </p>
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: '#7a5200', lineHeight: 1.5 }}>
+                    The model is not confident enough in this result. Please consult a doctor for a proper diagnosis.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              <Button fullWidth onClick={downloadReport} icon={<Download size={16} />}>
+              <Button
+                fullWidth
+                onClick={downloadReport}
+                icon={<Download size={16} />}
+                disabled={result.confidence < 0.60}
+                title={result.confidence < 0.60 ? 'Confidence too low — consult a doctor first' : ''}
+              >
                 {t('scan.downloadReport')}
               </Button>
               <Link to="/patient/book" style={{ display: 'block' }}>
@@ -268,6 +296,15 @@ export default function UploadScan() {
                   {t('scan.bookDoctor')}
                 </Button>
               </Link>
+              <Button
+                fullWidth
+                variant="outline"
+                icon={<Video size={16} />}
+                onClick={() => navigate('/patient/consult')}
+                id="consult-doctor-live-btn"
+              >
+                Consult Doctor Live
+              </Button>
               <Button fullWidth variant="ghost" onClick={shareWhatsApp} icon={<Share2 size={16} />}>
                 {t('scan.shareWhatsApp')}
               </Button>

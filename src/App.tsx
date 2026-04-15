@@ -24,6 +24,7 @@ import BookAppointment from './pages/patient/BookAppointment';
 import Records from './pages/patient/Records';
 import Locator from './pages/patient/Locator';
 import PatientProfile from './pages/patient/Profile';
+import Consult from './pages/patient/Consult';
 
 // Doctor pages
 import DoctorDashboard from './pages/doctor/Dashboard';
@@ -109,6 +110,7 @@ export default function App() {
           <Route path="/patient/records" element={<Records />} />
           <Route path="/patient/locator" element={<Locator />} />
           <Route path="/patient/profile" element={<PatientProfile />} />
+          <Route path="/patient/consult" element={<Consult />} />
         </Route>
 
         {/* ── Doctor Routes ── */}
@@ -164,4 +166,5 @@ export default function App() {
   const data = await res.json();
   console.log(data);
 };
+
 }

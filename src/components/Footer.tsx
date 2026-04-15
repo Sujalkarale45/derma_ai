@@ -95,7 +95,7 @@ export default function Footer() {
               {[
                 { icon: <Mail size={14} />, text: 'support@dermaai.app' },
                 { icon: <Phone size={14} />, text: '+91 1800-DERMA-AI' },
-                { icon: <MapPin size={14} />, text: 'Pune, Maharashtra, India' },
+                { icon: <MapPin size={14} />, text: 'Nagpur, Maharashtra, India' },
               ].map(({ icon, text }) => (
                 <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.65)', fontSize: 'var(--font-size-sm)' }}>
                   <span style={{ color: 'var(--primary)' }}>{icon}</span>
@@ -120,7 +120,7 @@ export default function Footer() {
             {t('landing.copyright')}
           </p>
           <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 'var(--font-size-xs)' }}>
-            Powered by AI · Built for Bharat 🇮🇳
+            Powered by AI · Built for Bharat
           </p>
         </div>
       </div>

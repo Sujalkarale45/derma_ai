@@ -4,3 +4,8 @@ dist/
 *.local
 .DS_Store
 Thumbs.db
+
+# Model checkpoints
+*.ckpt
+*.pt
+*.pth

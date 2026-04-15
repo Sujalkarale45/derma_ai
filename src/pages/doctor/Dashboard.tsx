@@ -8,14 +8,14 @@ import Badge from '../../components/ui/Badge';
 import Avatar from '../../components/ui/Avatar';
 
 const TODAY_SCHEDULE = [
-  { id:'a1', time:'10:00', patient:'Priya Sharma', type:'Follow-up', status:'confirmed' as const },
+  { id:'a1', time:'10:00', patient:'Riya Sharma', type:'Follow-up', status:'confirmed' as const },
   { id:'a2', time:'11:30', patient:'Ramesh Jadhav', type:'First Visit', status:'confirmed' as const },
   { id:'a3', time:'14:00', patient:'Kavitha Nair', type:'AI Review', status:'pending' as const },
   { id:'a4', time:'15:30', patient:'Sunil Patil', type:'Consultation', status:'confirmed' as const },
 ];
 
 const AI_QUEUE = [
-  { id:'s1', patient:'Priya Sharma', predictedClass:'mel', confidence:0.62, image:'https://picsum.photos/seed/sq1/60/60', submittedAt:'2026-04-13T18:00:00' },
+  { id:'s1', patient:'Riya Sharma', predictedClass:'mel', confidence:0.62, image:'https://picsum.photos/seed/sq1/60/60', submittedAt:'2026-04-13T18:00:00' },
   { id:'s2', patient:'Sonal Kulkarni', predictedClass:'bcc', confidence:0.78, image:'https://picsum.photos/seed/sq2/60/60', submittedAt:'2026-04-14T08:00:00' },
 ];
 

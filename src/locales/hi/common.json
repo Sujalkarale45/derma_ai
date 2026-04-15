@@ -13,7 +13,8 @@
     "profile": "प्रोफ़ाइल",
     "logout": "लॉग आउट",
     "uploadScan": "स्कैन अपलोड करें",
-    "bookAppointment": "अपॉइंटमेंट बुक करें"
+    "bookAppointment": "अपॉइंटमेंट बुक करें",
+    "consult": "डॉक्टर से परामर्श"
   },
   "auth": {
     "loginTitle": "वापस स्वागत है",

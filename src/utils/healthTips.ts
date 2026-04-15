@@ -5,17 +5,18 @@ export interface HealthTip {
 }
 
 export const HEALTH_TIPS: HealthTip[] = [
-  { icon: '☀️', titleKey: 'tips.sunscreen.title', bodyKey: 'tips.sunscreen.body' },
-  { icon: '🔍', titleKey: 'tips.selfExam.title', bodyKey: 'tips.selfExam.body' },
-  { icon: '💧', titleKey: 'tips.hydrate.title', bodyKey: 'tips.hydrate.body' },
-  { icon: '🎩', titleKey: 'tips.cover.title', bodyKey: 'tips.cover.body' },
-  { icon: '🍎', titleKey: 'tips.diet.title', bodyKey: 'tips.diet.body' },
-  { icon: '🩺', titleKey: 'tips.checkup.title', bodyKey: 'tips.checkup.body' },
-  { icon: '🚫', titleKey: 'tips.noTanning.title', bodyKey: 'tips.noTanning.body' },
+  { icon: '☀️', titleKey: 'tips.sunscreen_title', bodyKey: 'tips.sunscreen_body' },
+  { icon: '🔬', titleKey: 'tips.abcde_title',     bodyKey: 'tips.abcde_body' },
+  { icon: '💧', titleKey: 'tips.hydration_title', bodyKey: 'tips.hydration_body' },
+  { icon: '🩺', titleKey: 'tips.checkup_title',   bodyKey: 'tips.checkup_body' },
+  { icon: '🥦', titleKey: 'tips.diet_title',       bodyKey: 'tips.diet_body' },
+  { icon: '🎩', titleKey: 'tips.hat_title',        bodyKey: 'tips.hat_body' },
+  { icon: '🔍', titleKey: 'tips.mole_title',       bodyKey: 'tips.mole_body' },
 ];
 
-/** Returns tip based on day of year, cycling through all tips */
+/** Returns a different tip each day, cycling through all 7 */
 export function getDailyTip(): HealthTip {
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  const start = new Date(new Date().getFullYear(), 0, 1).getTime();
+  const dayOfYear = Math.floor((Date.now() - start) / 86_400_000);
   return HEALTH_TIPS[dayOfYear % HEALTH_TIPS.length];
 }

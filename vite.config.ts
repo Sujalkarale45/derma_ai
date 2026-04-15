@@ -31,7 +31,7 @@ export default defineConfig({
             if (id.includes('i18next')) return 'i18n';
             if (id.includes('react-dom') || id.includes('react-router')) return 'vendor';
 
-            // ✅ Catch-all for remaining node_modules
+       
             return 'vendor';
           }
         },

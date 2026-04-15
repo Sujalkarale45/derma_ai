@@ -10,13 +10,13 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { path: '/patient/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
-  { path: '/patient/upload-scan', icon: Upload, labelKey: 'nav.uploadScan' },
-  { path: '/patient/appointments', icon: Calendar, labelKey: 'nav.appointments' },
-  { path: '/patient/book', icon: BookOpen, labelKey: 'nav.bookAppointment' },
-  { path: '/patient/records', icon: FileText, labelKey: 'nav.records' },
-  { path: '/patient/locator', icon: MapPin, labelKey: 'nav.locator' },
-  { path: '/patient/profile', icon: User, labelKey: 'nav.profile' },
+  { path: '/patient/dashboard',    icon: LayoutDashboard, labelKey: 'nav.dashboard' },
+  { path: '/patient/upload-scan',  icon: Upload,          labelKey: 'nav.uploadScan' },
+  { path: '/patient/appointments', icon: Calendar,        labelKey: 'nav.appointments' },
+  { path: '/patient/book',         icon: BookOpen,        labelKey: 'nav.bookAppointment' },
+  { path: '/patient/records',      icon: FileText,        labelKey: 'nav.records' },
+  { path: '/patient/locator',      icon: MapPin,          labelKey: 'nav.locator' },
+  { path: '/patient/profile',      icon: User,            labelKey: 'nav.profile' },
 ];
 
 export default function PatientLayout() {

@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { login as loginService, logout as logoutService, register as registerService } from '../services/authService';
+import {
+  login as loginService,
+  logout as logoutService,
+  register as registerService,
+  loginWithGoogle as loginWithGoogleService,
+  syncSupabaseSession,
+} from '../services/authService';
+import { isConfigured } from '../services/supabase';
 import type { User, UserRole } from '../types';
 
 interface AuthState {
@@ -10,10 +17,12 @@ interface AuthState {
   error: string | null;
 
   login: (email: string, password: string, role: UserRole) => Promise<boolean>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   register: (name: string, email: string, password: string, role: UserRole, extra?: Record<string, unknown>) => Promise<boolean>;
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
+  initAuth: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -45,6 +54,28 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         await logoutService();
         set({ user: null, isAuthenticated: false, isLoading: false, error: null });
+      },
+
+      loginWithGoogle: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          await loginWithGoogleService();
+          // Actual session hydration happens in initAuth after OAuth redirect
+        } catch {
+          set({ error: 'Google Sign-In failed. Please try again.', isLoading: false });
+        }
+      },
+
+      initAuth: async () => {
+        if (!isConfigured) return;
+        try {
+          const user = await syncSupabaseSession();
+          if (user) {
+            set({ user, isAuthenticated: true });
+          }
+        } catch {
+          // ignore — stay logged out
+        }
       },
 
       register: async (name, email, password, role, extra = {}) => {

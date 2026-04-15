@@ -29,7 +29,7 @@ export default function Locator() {
                 <div style={{ minWidth: '180px', fontFamily: 'var(--font-sans)' }}>
                   <strong style={{ fontSize: '0.85rem' }}>{doc.name}</strong>
                   <p style={{ fontSize: '0.75rem', color: '#666', margin: '2px 0' }}>{doc.specialisation}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#666', margin: '2px 0' }}>⭐ {doc.rating} · {doc.city}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#666', margin: '2px 0' }}>Rating: {doc.rating} · {doc.city}</p>
                   <a href="/patient/book" style={{ display: 'block', marginTop: '0.5rem', padding: '0.3rem', background: '#1D9E75', color: 'white', borderRadius: '4px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none' }}>
                     Book Appointment
                   </a>
