@@ -6,10 +6,6 @@
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)",     "destination": "/index.html" }
   ],
-  "functions": {
-    "api/create-appointment.py": { "runtime": "python3.12" },
-    "api/send-whatsapp.py":      { "runtime": "python3.12" }
-  },
   "headers": [
     {
       "source": "/sw.js",
