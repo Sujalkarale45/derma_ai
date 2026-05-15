@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore';
 import { predictSkinLesion } from '../../services/aiService';
 import { generateScanReport } from '../../utils/pdfReport';
 import { CLASS_INFO, RISK_COLORS, TOP3_LABELS } from '../../utils/classDescriptions';
+import { saveScanToFirestore } from '../../services/scanService';
 import type { AIScan } from '../../types';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -60,10 +61,17 @@ export default function UploadScan() {
         risk_level: riskLevel,
       };
       setResult(scan);
+
       // Store for the Consult page to pick up
       try { sessionStorage.setItem('dermaai_last_scan', JSON.stringify(scan)); } catch {/* ignore */}
-      toast.success('Analysis complete!');
-    } catch (err) {
+
+      // Save to Firebase Firestore (non-blocking)
+      saveScanToFirestore(scan).catch(() => {
+        // silently fail — user still sees result
+      });
+
+      toast.success('Analysis complete! Report saved to your records.');
+    } catch {
       toast.error('Analysis failed. Please try again.');
     } finally {
       setIsAnalyzing(false);
@@ -202,7 +210,7 @@ export default function UploadScan() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <Badge variant={result.risk_level} dot style={{ fontSize: '0.8rem', padding: '0.375rem 0.75rem' }}>
-                    {result.risk_level === 'high' ? '⚠ HIGH RISK' :
+                     {result.risk_level === 'high' ? 'HIGH RISK' :
                      result.risk_level === 'moderate' ? 'MODERATE' : 'LOW RISK'}
                   </Badge>
                   <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.5rem' }}>

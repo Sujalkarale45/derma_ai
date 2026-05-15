@@ -1,0 +1,7 @@
+# Minimal Supabase local config — deploy functions with: supabase functions deploy book-appointment
+
+[project]
+id = "derma-ai"
+
+[functions.book-appointment]
+verify_jwt = false

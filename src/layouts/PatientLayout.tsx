@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
 import Navbar from '../components/Navbar';
 import Avatar from '../components/ui/Avatar';
+import WhatsAppButton from '../components/WhatsAppButton';
 import {
   LayoutDashboard, Upload, Calendar, BookOpen,
-  FileText, MapPin, User, Menu, X, Activity
+  FileText, MapPin, User, Menu, X, Activity, LogOut
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -21,8 +22,14 @@ const NAV_ITEMS = [
 
 export default function PatientLayout() {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   return (
     <div className="dashboard-layout">
@@ -70,7 +77,7 @@ export default function PatientLayout() {
         )}
 
         {/* Nav Links */}
-        <nav style={{ padding: '0.75rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+        <nav style={{ padding: '0.75rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.125rem', flex: 1 }}>
           {NAV_ITEMS.map(({ path, icon: Icon, labelKey }) => (
             <NavLink
               key={path}
@@ -93,6 +100,27 @@ export default function PatientLayout() {
             </NavLink>
           ))}
         </nav>
+
+        {/* Logout */}
+        <div style={{ padding: '0.75rem', borderTop: '0.5px solid var(--border)' }}>
+          <button
+            onClick={handleLogout}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.625rem',
+              width: '100%', padding: '0.625rem 0.875rem',
+              borderRadius: 'var(--radius-sm)', border: 'none',
+              background: 'transparent', cursor: 'pointer',
+              fontSize: 'var(--font-size-sm)', fontWeight: 500,
+              color: 'var(--error, #ef4444)',
+              transition: 'all var(--transition-fast)',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
       </aside>
 
       {/* Main area */}
@@ -133,6 +161,7 @@ export default function PatientLayout() {
           div[style*="left: var(--sidebar-width)"] { left: 0 !important; }
         }
       `}</style>
+      <WhatsAppButton />
     </div>
   );
 }

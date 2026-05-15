@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { Search, MapPin, Star, Filter, CheckCircle, Phone } from 'lucide-react';
-import { MOCK_DOCTORS } from '../../services/doctorService';
+import { Search, MapPin, Star, CheckCircle, Phone, Loader } from 'lucide-react';
+import { subscribeToVerifiedDoctors } from '../../services/doctorProfileService';
 import type { DoctorProfile } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -25,21 +25,35 @@ export default function FindDoctor() {
   const [search, setSearch] = useState('');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [selected, setSelected] = useState<DoctorProfile | null>(null);
-  const [filtered, setFiltered] = useState(MOCK_DOCTORS);
+  const [doctors, setDoctors] = useState<DoctorProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // Realtime verified doctors (appear instantly after admin approval)
   useEffect(() => {
-    let result = MOCK_DOCTORS;
-    if (verifiedOnly) result = result.filter(d => d.verified);
+    setLoading(true);
+    const unsub = subscribeToVerifiedDoctors(docs => {
+      setDoctors(docs);
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  // Client-side filter
+  const filtered = doctors.filter(d => {
+    if (verifiedOnly && !d.verified) return false;
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter(d =>
+      return (
         d.name.toLowerCase().includes(q) ||
         d.city.toLowerCase().includes(q) ||
         d.specialisation.toLowerCase().includes(q)
       );
     }
-    setFiltered(result);
-  }, [search, verifiedOnly]);
+    return true;
+  });
+
+  // Only doctors with valid coordinates get a map pin
+  const mappable = filtered.filter(d => d.lat && d.lng);
 
   return (
     <div style={{ paddingTop: 'var(--navbar-height)' }}>
@@ -48,7 +62,7 @@ export default function FindDoctor() {
         <div className="container">
           <h1 style={{ color: 'white', marginBottom: '0.5rem' }}>Find a Dermatologist</h1>
           <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '1.5rem' }}>
-            Search verified skin specialists across Maharashtra and beyond
+            Search verified skin specialists registered on DERMA AI
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
@@ -79,18 +93,42 @@ export default function FindDoctor() {
         </div>
       </div>
 
-      {/* Content: Map + List */}
+      {/* Content: List + Map */}
       <div style={{ display: 'flex', gap: 0, height: 'calc(100vh - var(--navbar-height) - 180px)', minHeight: '500px' }}>
-        
+
         {/* Doctor List */}
         <div style={{ width: '360px', overflowY: 'auto', flexShrink: 0, borderRight: '0.5px solid var(--border)' }}>
           <div style={{ padding: '1rem', borderBottom: '0.5px solid var(--border)', background: 'var(--neutral)' }}>
             <p style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              {filtered.length} doctor{filtered.length !== 1 ? 's' : ''} found
+              {loading ? 'Loading…' : `${filtered.length} doctor${filtered.length !== 1 ? 's' : ''} found`}
             </p>
           </div>
 
-          {filtered.map(doc => (
+          {/* Loading state */}
+          {loading && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+              <Loader size={20} style={{ animation: 'spin 1s linear infinite' }} />
+              <p style={{ fontSize: 'var(--font-size-sm)' }}>Loading doctors…</p>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!loading && filtered.length === 0 && (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <MapPin size={32} style={{ marginBottom: '0.75rem', opacity: 0.4 }} />
+              <p style={{ fontWeight: 600, marginBottom: '0.375rem' }}>
+                {doctors.length === 0 ? 'No doctors registered yet' : 'No doctors match your search'}
+              </p>
+              <p style={{ fontSize: 'var(--font-size-sm)' }}>
+                {doctors.length === 0
+                  ? 'Verified dermatologists will appear here once they register.'
+                  : 'Try a different name, city, or specialisation.'}
+              </p>
+            </div>
+          )}
+
+          {/* Doctor cards */}
+          {!loading && filtered.map(doc => (
             <div key={doc.id} onClick={() => setSelected(doc)} style={{
               padding: '1rem 1.25rem',
               cursor: 'pointer',
@@ -99,10 +137,16 @@ export default function FindDoctor() {
               transition: 'background var(--transition-fast)',
             }}>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                <img src={doc.avatar_url} alt={doc.name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                {doc.avatar_url ? (
+                  <img src={doc.avatar_url} alt={doc.name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700, color: 'var(--primary)', fontSize: '1.1rem' }}>
+                    {doc.name.charAt(0)}
+                  </div>
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.125rem' }}>
-                    <h6 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }} >{doc.name}</h6>
+                    <h6 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>{doc.name}</h6>
                     {doc.verified && <CheckCircle size={12} color="var(--primary)" />}
                   </div>
                   <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--primary)', marginBottom: '0.25rem' }}>{doc.specialisation}</p>
@@ -110,37 +154,28 @@ export default function FindDoctor() {
                     <MapPin size={10} color="var(--text-muted)" />
                     <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>{doc.city}, {doc.state}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.125rem', marginTop: '0.375rem', alignItems: 'center' }}>
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={10} fill={i < Math.round(doc.rating) ? '#f59e0b' : 'none'} color={i < Math.round(doc.rating) ? '#f59e0b' : '#ccc'} />
-                    ))}
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.25rem' }}>{doc.rating}</span>
-                  </div>
+                  {doc.rating > 0 && (
+                    <div style={{ display: 'flex', gap: '0.125rem', marginTop: '0.375rem', alignItems: 'center' }}>
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={10} fill={i < Math.round(doc.rating) ? '#f59e0b' : 'none'} color={i < Math.round(doc.rating) ? '#f59e0b' : '#ccc'} />
+                      ))}
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.25rem' }}>{doc.rating}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           ))}
-
-          {filtered.length === 0 && (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-              <MapPin size={32} style={{ marginBottom: '0.75rem', opacity: 0.5 }} />
-              <p>No doctors found matching your search.</p>
-            </div>
-          )}
         </div>
 
         {/* Map */}
         <div style={{ flex: 1, position: 'relative' }}>
-          <MapContainer
-            center={[18.9, 76.5]}
-            zoom={7}
-            style={{ height: '100%', width: '100%' }}
-          >
+          <MapContainer center={[18.9, 76.5]} zoom={7} style={{ height: '100%', width: '100%' }}>
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
-            {filtered.map(doc => (
+            {mappable.map(doc => (
               <Marker
                 key={doc.id}
                 position={[doc.lat, doc.lng]}
@@ -150,13 +185,15 @@ export default function FindDoctor() {
                 <Popup>
                   <div style={{ minWidth: '200px', fontFamily: 'var(--font-sans)' }}>
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      <img src={doc.avatar_url} alt={doc.name} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--primary)', flexShrink: 0 }}>
+                        {doc.name.charAt(0)}
+                      </div>
                       <div>
                         <strong style={{ fontSize: '0.85rem' }}>{doc.name}</strong>
                         <p style={{ fontSize: '0.75rem', color: '#666' }}>{doc.specialisation}</p>
                       </div>
                     </div>
-                    <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem' }}>Rating: {doc.rating} · {doc.city}</p>
+                    <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem' }}>{doc.city} · {doc.hospital}</p>
                     <a href="/patient/book" style={{
                       display: 'block', textAlign: 'center', padding: '0.375rem',
                       background: '#1D9E75', color: 'white', borderRadius: '6px',
@@ -170,31 +207,52 @@ export default function FindDoctor() {
             ))}
           </MapContainer>
 
+          {/* No map markers notice */}
+          {!loading && mappable.length === 0 && filtered.length > 0 && (
+            <div style={{
+              position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)',
+              background: 'var(--bg-card)', border: '0.5px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', padding: '0.625rem 1rem',
+              fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)',
+              zIndex: 1000, whiteSpace: 'nowrap',
+            }}>
+              Doctors found but no map coordinates set yet
+            </div>
+          )}
+
           {/* Selected doctor panel */}
           {selected && (
             <div style={{
               position: 'absolute', bottom: '1rem', left: '1rem', right: '1rem',
-              background: 'var(--bg-card)',
-              border: '0.5px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              boxShadow: 'var(--shadow-lg)',
-              padding: '1.25rem',
-              zIndex: 1000,
-              animation: 'fadeInUp 0.2s ease',
+              background: 'var(--bg-card)', border: '0.5px solid var(--border)',
+              borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)',
+              padding: '1.25rem', zIndex: 1000, animation: 'fadeInUp 0.2s ease',
             }}>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                <img src={selected.avatar_url} alt={selected.name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover' }} />
+                {selected.avatar_url ? (
+                  <img src={selected.avatar_url} alt={selected.name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--primary)', fontSize: '1.3rem', flexShrink: 0 }}>
+                    {selected.name.charAt(0)}
+                  </div>
+                )}
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <h5 style={{ fontSize: 'var(--font-size-base)' }}>{selected.name}</h5>
                     {selected.verified && <Badge variant="verified" dot>Verified</Badge>}
                   </div>
-                  <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--primary)' }}>{selected.specialisation} · {selected.experience_years} yrs exp.</p>
-                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{selected.hospital}, {selected.city}</p>
-                  <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.375rem', alignItems: 'center' }}>
-                    {[...Array(5)].map((_, i) => <Star key={i} size={11} fill={i < Math.round(selected.rating) ? '#f59e0b' : 'none'} color={i < Math.round(selected.rating) ? '#f59e0b' : '#ccc'} />)}
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>{selected.rating} ({selected.total_ratings} reviews)</span>
-                  </div>
+                  <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--primary)' }}>
+                    {selected.specialisation}{selected.experience_years > 0 ? ` · ${selected.experience_years} yrs exp.` : ''}
+                  </p>
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                    {selected.hospital ? `${selected.hospital}, ` : ''}{selected.city}
+                  </p>
+                  {selected.rating > 0 && (
+                    <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.375rem', alignItems: 'center' }}>
+                      {[...Array(5)].map((_, i) => <Star key={i} size={11} fill={i < Math.round(selected.rating) ? '#f59e0b' : 'none'} color={i < Math.round(selected.rating) ? '#f59e0b' : '#ccc'} />)}
+                      <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>{selected.rating} ({selected.total_ratings} reviews)</span>
+                    </div>
+                  )}
                 </div>
                 <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.2rem' }}>×</button>
               </div>
@@ -202,9 +260,11 @@ export default function FindDoctor() {
                 <Link to="/patient/book" style={{ flex: 1 }}>
                   <Button fullWidth size="sm">Book Appointment</Button>
                 </Link>
-                <a href={`tel:${selected.phone}`}>
-                  <Button variant="ghost" size="sm" icon={<Phone size={14} />}>Call</Button>
-                </a>
+                {selected.phone && (
+                  <a href={`tel:${selected.phone}`}>
+                    <Button variant="ghost" size="sm" icon={<Phone size={14} />}>Call</Button>
+                  </a>
+                )}
               </div>
             </div>
           )}

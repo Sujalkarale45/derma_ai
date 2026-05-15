@@ -14,12 +14,23 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+    proxy: {
+      // Legacy booking fallback: /api/create-appointment, send-appointment-email (Vercel-style)
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('error', () => {
+            // Vercel dev not running — edge function or deploy handles booking
+          });
+        },
+      },
+    },
   },
 
   build: {
     outDir: 'dist',
 
-    // 🔥 Fix chunk warning
     chunkSizeWarningLimit: 1000,
 
     rollupOptions: {

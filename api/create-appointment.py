@@ -26,6 +26,22 @@ import json
 import os
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler
+from pathlib import Path
+
+
+def _load_service_account_json() -> str:
+    """Read SA JSON from env string or from GOOGLE_SERVICE_ACCOUNT_JSON_PATH file."""
+    inline = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+    if inline:
+        return inline
+    rel = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON_PATH", "").strip()
+    if not rel:
+        return ""
+    base = Path(__file__).resolve().parent.parent
+    path = (base / rel).resolve()
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
+    return ""
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -168,12 +184,12 @@ class handler(BaseHTTPRequestHandler):
             return _json_response(self, 400, {"error": "Invalid slot_datetime — use ISO 8601"})
 
         # ── Read environment vars ─────────────────────────────────────────────
-        sa_json     = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+        sa_json     = _load_service_account_json()
         calendar_id = os.environ.get("GOOGLE_CALENDAR_ID", "primary")
 
         if not sa_json:
             return _json_response(self, 500, {
-                "error": "GOOGLE_SERVICE_ACCOUNT_JSON not configured in environment"
+                "error": "Google service account not configured (GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_JSON_PATH)"
             })
 
         # ── Create calendar event ─────────────────────────────────────────────

@@ -1,21 +1,17 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import StatCard from '../../components/ui/StatCard';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
-import { Calendar, Upload, FileText, MapPin, Scan, Clock, Lightbulb, ArrowRight, Star } from 'lucide-react';
-import { getDailyTip, HEALTH_TIPS } from '../../utils/healthTips';
+import { Calendar, Upload, FileText, MapPin, Scan, Clock, Lightbulb, ArrowRight, Loader } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { getDailyTip } from '../../utils/healthTips';
 import { format } from 'date-fns';
-
-const MOCK_APPOINTMENTS = [
-  { id: 'a1', doctor_name: 'Dr. Rajesh Kulkarni', specialisation: 'Dermatology', slot_datetime: '2026-04-16T10:00:00', status: 'confirmed' as const, meet_link: 'https://meet.google.com/abc-defg-hij' },
-  { id: 'a2', doctor_name: 'Dr. Sunita Joshi', specialisation: 'Dermato-Oncology', slot_datetime: '2026-04-22T14:30:00', status: 'pending' as const, meet_link: '' },
-];
-
-const MOCK_SCANS = [
-  { id: 's1', predicted_class: 'nv' as const, confidence: 0.87, risk_level: 'low' as const, created_at: '2026-04-10T08:30:00', image_url: 'https://picsum.photos/seed/scan1/80/80' },
-];
+import { fetchScansForPatient } from '../../services/scanService';
+import { supabase, isConfigured } from '../../services/supabase';
+import type { AIScan, Appointment } from '../../types';
 
 const QUICK_ACTIONS = [
   { to: '/patient/upload-scan', icon: <Upload size={20} color="var(--primary)" />, label: 'Upload Scan', desc: 'Get AI analysis' },
@@ -24,22 +20,65 @@ const QUICK_ACTIONS = [
   { to: '/patient/records', icon: <FileText size={20} color="var(--primary)" />, label: 'My Records', desc: 'View health history' },
 ];
 
+const TipIcon = ({ name }: { name: string }) => {
+  const Icon = (LucideIcons as unknown as Record<string, React.ElementType>)[name];
+  return Icon ? <Icon size={22} color="var(--primary)" /> : null;
+};
+
 export default function PatientDashboard() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const dailyTip = getDailyTip();
-  const nextAppt = MOCK_APPOINTMENTS.find(a => (a.status as string) !== 'cancelled');
-  const lastScan = MOCK_SCANS[0];
+
+  const [scans, setScans] = useState<AIScan[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadData = async () => {
+      try {
+        // Load real scans from Firestore
+        const realScans = await fetchScansForPatient(user.id);
+        setScans(realScans);
+      } catch (e) {
+        console.error('Failed to load scans', e);
+      }
+
+      // Load real appointments from Supabase
+      if (isConfigured) {
+        try {
+          const { data } = await supabase
+            .from('appointments')
+            .select('*')
+            .eq('patient_id', user.id)
+            .order('slot_datetime', { ascending: true });
+          if (data) setAppointments(data as Appointment[]);
+        } catch (e) {
+          console.error('Failed to load appointments', e);
+        }
+      }
+
+      setLoading(false);
+    };
+
+    loadData();
+  }, [user]);
+
+  const now = new Date();
+  const nextAppt = appointments.find(a =>
+    a.status !== 'cancelled' && new Date(a.slot_datetime) > now
+  );
+  const lastScan = scans[0]; // already ordered desc by created_at
 
   return (
     <div>
       {/* Welcome banner */}
       <div style={{
         background: 'linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '1.75rem 2rem',
-        marginBottom: '1.75rem',
-        color: 'white',
+        borderRadius: 'var(--radius-lg)', padding: '1.75rem 2rem',
+        marginBottom: '1.75rem', color: 'white',
         position: 'relative', overflow: 'hidden',
       }}>
         <div style={{ position: 'absolute', right: '-20px', top: '-20px', width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
@@ -51,7 +90,7 @@ export default function PatientDashboard() {
           {user?.name?.split(' ')[0] ?? 'Patient'}
         </h2>
         <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 'var(--font-size-sm)' }}>
-          {user?.location ?? 'Nagpur, Maharashtra'} · {format(new Date(), 'EEEE, dd MMMM yyyy')}
+          {user?.location ?? ''} · {format(new Date(), 'EEEE, dd MMMM yyyy')}
         </p>
       </div>
 
@@ -62,7 +101,7 @@ export default function PatientDashboard() {
           value={nextAppt ? format(new Date(nextAppt.slot_datetime), 'dd MMM') : '—'}
           icon={<Calendar size={20} color="var(--primary)" />}
           iconBg="var(--accent)"
-          subtitle={nextAppt ? nextAppt.doctor_name : t('dashboard.noAppointment')}
+          subtitle={nextAppt ? (nextAppt as any).doctor_name ?? 'Upcoming' : t('dashboard.noAppointment')}
         />
         <StatCard
           title={t('dashboard.lastScan')}
@@ -73,11 +112,9 @@ export default function PatientDashboard() {
         />
         <StatCard
           title={t('dashboard.totalRecords')}
-          value="3"
+          value={loading ? '…' : String(scans.length)}
           icon={<FileText size={20} color="var(--primary)" />}
           iconBg="var(--accent)"
-          trend={50}
-          trendLabel="this month"
         />
       </div>
 
@@ -92,22 +129,39 @@ export default function PatientDashboard() {
               {t('common.viewAll')} <ArrowRight size={12} />
             </Link>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {MOCK_APPOINTMENTS.map(appt => (
-              <div key={appt.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem', background: 'var(--neutral)', borderRadius: 'var(--radius-sm)', alignItems: 'center' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Clock size={18} color="var(--primary)" />
+          {loading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1rem', color: 'var(--text-muted)' }}>
+              <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
+              <p style={{ fontSize: 'var(--font-size-sm)' }}>Loading appointments…</p>
+            </div>
+          ) : appointments.filter(a => a.status !== 'cancelled').length === 0 ? (
+            <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <Clock size={28} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
+              <p style={{ fontSize: 'var(--font-size-sm)' }}>No upcoming appointments</p>
+              <Link to="/patient/book" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--primary)', marginTop: '0.375rem', display: 'block' }}>
+                Book one now →
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {appointments.filter(a => a.status !== 'cancelled').slice(0, 3).map(appt => (
+                <div key={appt.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem', background: 'var(--neutral)', borderRadius: 'var(--radius-sm)', alignItems: 'center' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-sm)', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Clock size={18} color="var(--primary)" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
+                      {(appt as any).doctor_name ?? `Doctor #${appt.doctor_id.slice(0, 6)}`}
+                    </p>
+                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                      {format(new Date(appt.slot_datetime), 'dd MMM · hh:mm a')}
+                    </p>
+                  </div>
+                  <Badge variant={appt.status} dot>{appt.status}</Badge>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>{appt.doctor_name}</p>
-                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-                    {format(new Date(appt.slot_datetime), 'dd MMM · hh:mm a')}
-                  </p>
-                </div>
-                <Badge variant={appt.status} dot>{appt.status}</Badge>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
 
         {/* Recent AI scans */}
@@ -118,20 +172,34 @@ export default function PatientDashboard() {
               {t('common.viewAll')} <ArrowRight size={12} />
             </Link>
           </div>
-          {MOCK_SCANS.map(scan => (
-            <div key={scan.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem', background: 'var(--neutral)', borderRadius: 'var(--radius-sm)', alignItems: 'center' }}>
-              <img src={scan.image_url} alt="scan" style={{ width: 48, height: 48, borderRadius: 'var(--radius-sm)', objectFit: 'cover' }} />
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
-                  {scan.predicted_class.toUpperCase()} — {(scan.confidence * 100).toFixed(0)}%
-                </p>
-                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-                  {format(new Date(scan.created_at), 'dd MMM yyyy')}
-                </p>
-              </div>
-              <Badge variant={scan.risk_level} dot>{scan.risk_level} risk</Badge>
+          {loading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1rem', color: 'var(--text-muted)' }}>
+              <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
+              <p style={{ fontSize: 'var(--font-size-sm)' }}>Loading scans…</p>
             </div>
-          ))}
+          ) : scans.length === 0 ? (
+            <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <Scan size={28} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
+              <p style={{ fontSize: 'var(--font-size-sm)' }}>No scans yet</p>
+            </div>
+          ) : (
+            scans.slice(0, 3).map(scan => (
+              <div key={scan.id} style={{ display: 'flex', gap: '0.75rem', padding: '0.75rem', background: 'var(--neutral)', borderRadius: 'var(--radius-sm)', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-sm)', background: 'var(--neutral)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '0.5px solid var(--border)', flexShrink: 0 }}>
+                  <Scan size={20} color="var(--text-muted)" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
+                    {scan.predicted_class.toUpperCase()} — {(scan.confidence * 100).toFixed(0)}%
+                  </p>
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                    {format(new Date(scan.created_at), 'dd MMM yyyy')}
+                  </p>
+                </div>
+                <Badge variant={scan.risk_level} dot>{scan.risk_level} risk</Badge>
+              </div>
+            ))
+          )}
           <div style={{ marginTop: '1rem' }}>
             <Link to="/patient/upload-scan">
               <div style={{ border: '1.5px dashed var(--border-strong)', borderRadius: 'var(--radius-sm)', padding: '0.875rem', textAlign: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' }}>
@@ -169,7 +237,9 @@ export default function PatientDashboard() {
               {t('dashboard.healthTipOfDay')}
             </span>
           </div>
-          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{dailyTip.icon}</div>
+          <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <TipIcon name={dailyTip.icon} />
+          </div>
           <h6 style={{ marginBottom: '0.5rem', color: 'var(--primary)' }}>{t(dailyTip.titleKey)}</h6>
           <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', lineHeight: 1.6 }}>
             {t(dailyTip.bodyKey)}

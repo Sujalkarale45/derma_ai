@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, isAfter, subHours } from 'date-fns';
-import { Video, Share2, X, Clock, CheckCircle, AlertCircle, Copy } from 'lucide-react';
+import { Video, Share2, X, Clock, CheckCircle, AlertCircle, Copy, Loader } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
@@ -56,8 +56,36 @@ const STATUS_META: Record<AppointmentStatus, { label: string; color: string }> =
 
 export default function PatientAppointments() {
   const { user } = useAuthStore();
-  const [appointments, setAppointments] = useState<Appt[]>(SEED_DATA);
+  const [appointments, setAppointments] = useState<Appt[]>([]);
+  const [loadingAppts, setLoadingAppts] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
+
+  // ── Load appointments from Supabase (or fall back to seed data) ──────────
+  useEffect(() => {
+    async function load() {
+      if (isConfigured && user) {
+        try {
+          const { data, error } = await supabase
+            .from('appointments')
+            .select('*')
+            .eq('patient_id', user.id)
+            .order('slot_datetime', { ascending: true });
+          if (error) throw error;
+          setAppointments((data ?? []) as Appt[]);
+        } catch (err) {
+          console.error('Failed to load appointments:', err);
+          toast.error('Could not load appointments.');
+          setAppointments(SEED_DATA); // graceful fallback
+        }
+      } else {
+        // Demo mode — use seed data
+        await new Promise(r => setTimeout(r, 400));
+        setAppointments(SEED_DATA);
+      }
+      setLoadingAppts(false);
+    }
+    load();
+  }, [user]);
 
   function canCancel(dt: string, status: AppointmentStatus) {
     return (status === 'pending' || status === 'confirmed')
@@ -205,7 +233,12 @@ export default function PatientAppointments() {
         </p>
       </div>
 
-      {appointments.length === 0 && (
+      {loadingAppts ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', padding: '4rem', color: 'var(--text-muted)' }}>
+          <Loader size={22} style={{ animation: 'spin 1s linear infinite' }} />
+          <p>Loading appointments…</p>
+        </div>
+      ) : appointments.length === 0 && (
         <Card style={{ textAlign: 'center', padding: '3rem' }}>
           <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>No appointments found.</p>
           <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>

@@ -5,13 +5,13 @@ export interface HealthTip {
 }
 
 export const HEALTH_TIPS: HealthTip[] = [
-  { icon: '☀️', titleKey: 'tips.sunscreen_title', bodyKey: 'tips.sunscreen_body' },
-  { icon: '🔬', titleKey: 'tips.abcde_title',     bodyKey: 'tips.abcde_body' },
-  { icon: '💧', titleKey: 'tips.hydration_title', bodyKey: 'tips.hydration_body' },
-  { icon: '🩺', titleKey: 'tips.checkup_title',   bodyKey: 'tips.checkup_body' },
-  { icon: '🥦', titleKey: 'tips.diet_title',       bodyKey: 'tips.diet_body' },
-  { icon: '🎩', titleKey: 'tips.hat_title',        bodyKey: 'tips.hat_body' },
-  { icon: '🔍', titleKey: 'tips.mole_title',       bodyKey: 'tips.mole_body' },
+  { icon: 'Sun',         titleKey: 'tips.sunscreen_title', bodyKey: 'tips.sunscreen_body' },
+  { icon: 'Microscope',  titleKey: 'tips.abcde_title',     bodyKey: 'tips.abcde_body' },
+  { icon: 'Droplets',    titleKey: 'tips.hydration_title', bodyKey: 'tips.hydration_body' },
+  { icon: 'Stethoscope', titleKey: 'tips.checkup_title',   bodyKey: 'tips.checkup_body' },
+  { icon: 'Apple',       titleKey: 'tips.diet_title',       bodyKey: 'tips.diet_body' },
+  { icon: 'ShieldCheck', titleKey: 'tips.hat_title',        bodyKey: 'tips.hat_body' },
+  { icon: 'Search',      titleKey: 'tips.mole_title',       bodyKey: 'tips.mole_body' },
 ];
 
 /** Returns a different tip each day, cycling through all 7 */

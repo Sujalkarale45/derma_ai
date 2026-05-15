@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
 import Avatar from '../components/ui/Avatar';
-import { LayoutDashboard, Calendar, Users, Clock, Video, User, Menu, X, Activity, ShieldCheck } from 'lucide-react';
+import WhatsAppButton from '../components/WhatsAppButton';
+import { LayoutDashboard, Calendar, Users, Clock, Video, User, Menu, X, Activity, ShieldCheck, LogOut } from 'lucide-react';
 
 const NAV_ITEMS = [
   { path: '/doctor/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
@@ -14,8 +15,14 @@ const NAV_ITEMS = [
 
 export default function DoctorLayout() {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   return (
     <div className="dashboard-layout">
@@ -46,7 +53,7 @@ export default function DoctorLayout() {
           </div>
         )}
 
-        <nav style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+        <nav style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.125rem', flex: 1 }}>
           {NAV_ITEMS.map(({ path, icon: Icon, labelKey }) => (
             <NavLink key={path} to={path} onClick={() => setSidebarOpen(false)}
               style={({ isActive }) => ({
@@ -63,6 +70,27 @@ export default function DoctorLayout() {
             </NavLink>
           ))}
         </nav>
+
+        {/* Logout */}
+        <div style={{ padding: '0.75rem', borderTop: '0.5px solid var(--border)' }}>
+          <button
+            onClick={handleLogout}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.625rem',
+              width: '100%', padding: '0.625rem 0.875rem',
+              borderRadius: 'var(--radius-sm)', border: 'none',
+              background: 'transparent', cursor: 'pointer',
+              fontSize: 'var(--font-size-sm)', fontWeight: 500,
+              color: 'var(--error, #ef4444)',
+              transition: 'all var(--transition-fast)',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
       </aside>
 
       <div style={{ flex: 1 }}>
@@ -78,6 +106,7 @@ export default function DoctorLayout() {
       </div>
 
       <style>{`@media (max-width: 1024px) { .mobile-sidebar-toggle { display: flex !important; } }`}</style>
+      <WhatsAppButton />
     </div>
   );
 }

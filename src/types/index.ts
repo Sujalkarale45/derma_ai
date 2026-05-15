@@ -52,9 +52,13 @@ export interface Appointment {
   id: string;
   patient_id: string;
   doctor_id: string;
+  doctor_name?: string;
+  patient_name?: string;
+  specialisation?: string;
   slot_datetime: string;      // ISO 8601
   status: AppointmentStatus;
   meet_link?: string;
+  calendar_event_id?: string;
   notes?: string;
   prescription?: string;
   scan_id?: string;

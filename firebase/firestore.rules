@@ -1,0 +1,13 @@
+rules_version = '2';
+// DERMA AI uses Supabase Auth — Firestore has no Firebase Auth session on the client.
+// Deploy permissive rules for the student/demo setup, or move approve/reject to a
+// Cloud Function with the Firebase Admin SDK for production.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /doctor_profiles/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.verified == false;
+      allow update, delete: if true;
+    }
+  }
+}

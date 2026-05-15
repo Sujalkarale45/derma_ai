@@ -25,6 +25,15 @@ const MOCK_USERS: Record<string, User> = {
 };
 
 const DEMO_PASSWORD = 'demo1234';
+
+/** Default admin for Supabase projects (dev / bootstrap). Change in production. */
+export const BOOTSTRAP_ADMIN_EMAIL =
+  (import.meta.env.VITE_BOOTSTRAP_ADMIN_EMAIL || 'admin@dermaai.com').toLowerCase();
+export const BOOTSTRAP_ADMIN_PASSWORD =
+  import.meta.env.VITE_BOOTSTRAP_ADMIN_PASSWORD || 'DermaAdmin@2026';
+const BOOTSTRAP_ADMIN_ENABLED =
+  import.meta.env.DEV || import.meta.env.VITE_ENABLE_BOOTSTRAP_ADMIN === 'true';
+
 const USE_SUPABASE = (() => {
   try {
     const url = import.meta.env.VITE_SUPABASE_URL || '';
@@ -34,16 +43,113 @@ const USE_SUPABASE = (() => {
   }
 })();
 
+async function loginBootstrapAdmin(email: string, password: string): Promise<User | null> {
+  if (!BOOTSTRAP_ADMIN_ENABLED) return null;
+  if (email.toLowerCase() !== BOOTSTRAP_ADMIN_EMAIL || password !== BOOTSTRAP_ADMIN_PASSWORD) {
+    return null;
+  }
+
+  const { supabase } = await import('./supabase');
+  const adminProfile = (userId: string): User => ({
+    id: userId,
+    name: 'DERMA AI Admin',
+    email: BOOTSTRAP_ADMIN_EMAIL,
+    role: 'admin',
+    phone: '+91 9000000001',
+    location: 'Mumbai, Maharashtra',
+    language_pref: 'en',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  let signInErr = null as { message: string } | null;
+  let authUserId: string | null = null;
+
+  const first = await supabase.auth.signInWithPassword({
+    email: BOOTSTRAP_ADMIN_EMAIL,
+    password: BOOTSTRAP_ADMIN_PASSWORD,
+  });
+  signInErr = first.error;
+  authUserId = first.data.user?.id ?? null;
+
+  if (signInErr) {
+    const signUp = await supabase.auth.signUp({
+      email: BOOTSTRAP_ADMIN_EMAIL,
+      password: BOOTSTRAP_ADMIN_PASSWORD,
+      options: { data: { name: 'DERMA AI Admin', role: 'admin' } },
+    });
+    if (signUp.error) {
+      console.error('Bootstrap admin signUp failed:', signUp.error.message);
+      return null;
+    }
+    authUserId = signUp.data.user?.id ?? signUp.data.session?.user?.id ?? null;
+    if (!authUserId) {
+      const retry = await supabase.auth.signInWithPassword({
+        email: BOOTSTRAP_ADMIN_EMAIL,
+        password: BOOTSTRAP_ADMIN_PASSWORD,
+      });
+      signInErr = retry.error;
+      authUserId = retry.data.user?.id ?? null;
+    } else {
+      signInErr = null;
+    }
+  }
+
+  if (signInErr || !authUserId) {
+    console.error(
+      'Bootstrap admin login failed. In Supabase: Authentication → Providers → Email → disable "Confirm email".',
+      signInErr?.message,
+    );
+    return null;
+  }
+
+  const profile = adminProfile(authUserId);
+  await supabase.from('users').upsert(profile as unknown as Record<string, unknown>, { onConflict: 'id' });
+  return profile;
+}
+
 // ─── Login ──────────────────────────────────────────────────────────────────
 export async function login(email: string, password: string, role: UserRole): Promise<User | null> {
   if (USE_SUPABASE) {
     try {
+      if (role === 'admin') {
+        const bootstrap = await loginBootstrapAdmin(email, password);
+        if (bootstrap) return bootstrap;
+      }
+
       const { supabase } = await import('./supabase');
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error || !data.user) return null;
-      const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
-      return (profile as User) ?? null;
-    } catch {
+
+      // Try to get full profile from users table
+      const { data: profile, error: profileErr } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profile) return profile as User;
+
+      // Profile row missing (email not confirmed yet, or trigger delay) —
+      // build a minimal User from the auth session so login still works
+      if (profileErr) {
+        console.warn('Profile row not found, falling back to auth metadata:', profileErr.message);
+      }
+      const fallback: User = {
+        id: data.user.id,
+        name: data.user.user_metadata?.name || email.split('@')[0],
+        email: data.user.email ?? email,
+        role: (data.user.user_metadata?.role as UserRole) ?? role,
+        language_pref: 'en',
+        created_at: data.user.created_at ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Try to create the missing row now
+      await supabase.from('users').upsert(fallback as unknown as Record<string, unknown>, { onConflict: 'id' });
+      return fallback;
+    } catch (err) {
+      console.error('Login error:', err);
       return null;
     }
   }
@@ -56,6 +162,7 @@ export async function login(email: string, password: string, role: UserRole): Pr
   return null;
 }
 
+
 // ─── Register ───────────────────────────────────────────────────────────────
 export async function register(
   name: string,
@@ -64,31 +171,37 @@ export async function register(
   role: UserRole,
   extra: Record<string, unknown> = {}
 ): Promise<User | null> {
-  if (USE_SUPABASE) {
-    try {
-      const { supabase } = await import('./supabase');
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error || !data.user) return null;
-      const newProfile: User = {
-        id: data.user.id, name, email, role,
-        phone: (extra.phone as string) || '',
-        location: extra.state ? `${extra.village || extra.city || ''}, ${extra.state}` : '',
-        language_pref: (extra.language_pref as string) || 'en',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      // Use any to bypass Supabase generics typing issue with table schema
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await supabase.from('users').insert(newProfile as any);
-      return newProfile;
-    } catch {
-      return null;
-    }
-  }
+  const userId = USE_SUPABASE
+    ? await (async () => {
+        try {
+          const { supabase } = await import('./supabase');
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { name, role } },  // stored in raw_user_meta_data
+          });
+          if (error || !data.user) return null;
+          const newProfile: User = {
+            id: data.user.id, name, email, role,
+            phone: (extra.phone as string) || '',
+            location: extra.state ? `${extra.village || extra.city || ''}, ${extra.state}` : '',
+            language_pref: (extra.language_pref as string) || 'en',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await supabase.from('users').insert(newProfile as any);
+          return data.user.id;
+        } catch {
+          return null;
+        }
+      })()
+    : `${role}-${Date.now()}`;
 
-  await new Promise(r => setTimeout(r, 800));
+  if (!userId) return null;
+
   const newUser: User = {
-    id: `${role}-${Date.now()}`, name, email, role,
+    id: userId, name, email, role,
     phone: (extra.phone as string) || '',
     location: extra.state ? `${extra.village || extra.city || ''}, ${extra.state}` : '',
     language_pref: (extra.language_pref as string) || 'en',
@@ -96,6 +209,37 @@ export async function register(
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+
+  // ── Save doctor profile to Firestore ────────────────────────────────────
+  if (role === 'doctor') {
+    try {
+      const { saveDoctorProfile } = await import('./doctorProfileService');
+      await saveDoctorProfile({
+        id:             userId,
+        name,
+        email,
+        role:           'doctor',
+        phone:          (extra.phone as string) || '',
+        specialisation: (extra.specialisation as string) || 'General Dermatology',
+        reg_number:     (extra.reg_number as string) || '',
+        hospital:       (extra.hospital as string) || '',
+        city:           (extra.city as string) || '',
+        state:          (extra.state as string) || '',
+        experience_years: 0,
+        lat: 0, lng: 0,
+        verified: false,
+        rating: 0, total_ratings: 0,
+        available_days: [1, 2, 3, 4, 5],
+        languages: ['en'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } catch {
+      // Non-blocking: profile save failure shouldn't block registration
+    }
+  }
+
+  if (!USE_SUPABASE) await new Promise(r => setTimeout(r, 800));
   return newUser;
 }
 

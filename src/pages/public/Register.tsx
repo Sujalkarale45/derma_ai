@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import type { UserRole } from '../../types';
-import { Activity, ChevronRight } from 'lucide-react';
+import { Activity, ChevronRight, AlertTriangle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 
@@ -197,8 +197,9 @@ export default function Register() {
                       {STATES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
-                  <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--warning-light)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '0.5px solid var(--warning)' }}>
-                    <p style={{ fontSize: 'var(--font-size-xs)', color: '#7a5200' }}>⚠ {t('auth.approvalNote')}</p>
+                  <div className="form-group" style={{ gridColumn: '1 / -1', background: 'var(--warning-light)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '0.5px solid var(--warning)', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                    <AlertTriangle size={13} color="var(--warning)" style={{ flexShrink: 0, marginTop: '1px' }} />
+                    <p style={{ fontSize: 'var(--font-size-xs)', color: '#7a5200' }}>{t('auth.approvalNote')}</p>
                   </div>
                 </>
               )}

@@ -7,7 +7,8 @@ import {
   Globe, Users, Scan, Building2,
   ArrowRight, ChevronRight, Heart
 } from 'lucide-react';
-import { MOCK_DOCTORS } from '../../services/doctorService';
+import { subscribeToVerifiedDoctors } from '../../services/doctorProfileService';
+import type { DoctorProfile } from '../../types';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -89,6 +90,15 @@ const STEPS = [
 ];
 
 export default function Landing() {
+  const [featuredDoctors, setFeaturedDoctors] = useState<DoctorProfile[]>([]);
+
+  useEffect(() => {
+    const unsub = subscribeToVerifiedDoctors(docs => {
+      setFeaturedDoctors(docs.slice(0, 3));
+    });
+    return unsub;
+  }, []);
+
   const { t } = useTranslation();
   const [headlineIdx, setHeadlineIdx] = useState(0);
 
@@ -272,7 +282,11 @@ export default function Landing() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-            {MOCK_DOCTORS.filter(d => d.verified).slice(0, 3).map(doctor => (
+            {featuredDoctors.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
+                Verified dermatologists will appear here once registered and approved.
+              </p>
+            ) : featuredDoctors.map(doctor => (
               <Card key={doctor.id} hover style={{ position: 'relative', overflow: 'hidden' }}>
                 {doctor.verified && (
                   <div style={{
@@ -286,10 +300,18 @@ export default function Landing() {
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                  {doctor.avatar_url ? (
                   <img src={doctor.avatar_url} alt={doctor.name} style={{
                     width: 64, height: 64, borderRadius: '50%', objectFit: 'cover',
                     border: '2px solid var(--accent)',
                   }} />
+                  ) : (
+                  <div style={{
+                    width: 64, height: 64, borderRadius: '50%', background: 'var(--accent)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 700, fontSize: '1.25rem', color: 'var(--primary)', flexShrink: 0,
+                  }}>{doctor.name.charAt(0)}</div>
+                  )}
                   <div>
                     <h5 style={{ marginBottom: '0.25rem' }}>{doctor.name}</h5>
                     <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--primary)', fontWeight: 500 }}>{doctor.specialisation}</p>

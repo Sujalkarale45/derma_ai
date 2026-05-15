@@ -2,32 +2,21 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
+import { BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_PASSWORD } from '../../services/authService';
 import type { UserRole } from '../../types';
 import { Activity, Eye, EyeOff, Microscope, Video, MessageCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
-import { isConfigured } from '../../services/supabase';
-
-/* Google "G" SVG icon */
-const GoogleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 48 48" style={{ display: 'block' }}>
-    <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2v6h7.7c4.5-4.1 7-10.3 7-17.2z"/>
-    <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.1 2.3-6.2 0-11.5-4.2-13.4-9.9H2.7v6.2C6.7 42.8 14.8 48 24 48z"/>
-    <path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6v-6.2H2.7C1 16.4 0 20.1 0 24s1 7.6 2.7 10.8l7.9-6.2z"/>
-    <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.1 30.5 0 24 0 14.8 0 6.7 5.2 2.7 13.2l7.9 6.2C12.5 13.7 17.8 9.5 24 9.5z"/>
-  </svg>
-);
 
 export default function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { login, loginWithGoogle, isLoading, error, clearError } = useAuthStore();
+  const { login, isLoading, error, clearError } = useAuthStore();
 
   const [role, setRole] = useState<UserRole>('patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,20 +28,6 @@ export default function Login() {
     }
   }
 
-  async function handleGoogleLogin() {
-    if (!isConfigured) {
-      toast.error('Google Sign-In requires Supabase setup. See .env.example for configuration.');
-      return;
-    }
-    setGoogleLoading(true);
-    try {
-      await loginWithGoogle();
-      // Redirect is handled by Supabase OAuth flow
-    } catch {
-      toast.error('Google Sign-In failed. Please try again.');
-      setGoogleLoading(false);
-    }
-  }
 
   const ROLES: { value: UserRole; label: string }[] = [
     { value: 'patient', label: 'Patient' },
@@ -145,36 +120,23 @@ export default function Login() {
             ))}
           </div>
 
-          {/* Google OAuth */}
-          <button
-            onClick={handleGoogleLogin}
-            disabled={googleLoading || isLoading}
-            style={{
-              width: '100%', padding: '0.7rem 1rem',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
-              background: 'var(--bg-card)', border: '1px solid var(--border-strong)',
-              borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-              fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 'var(--font-size-sm)',
-              color: 'var(--text-primary)',
-              transition: 'all var(--transition-fast)',
-              marginBottom: '1.25rem',
-              opacity: googleLoading ? 0.7 : 1,
-            }}
-            onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
-            onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-          >
-            {googleLoading ? (
-              <span style={{ width: 16, height: 16, border: '2px solid var(--border-strong)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
-            ) : <GoogleIcon />}
-            Continue with Google
-          </button>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', fontWeight: 500 }}>or sign in with email</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          </div>
+          {role === 'admin' && (
+            <div style={{
+              background: 'rgba(29,158,117,0.08)', border: '0.5px solid rgba(29,158,117,0.35)',
+              borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem', marginBottom: '1.25rem',
+              fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', lineHeight: 1.6,
+            }}>
+              <strong style={{ color: 'var(--primary)' }}>Admin access</strong>
+              <br />
+              Email: <code>{BOOTSTRAP_ADMIN_EMAIL}</code>
+              <br />
+              Password: <code>{BOOTSTRAP_ADMIN_PASSWORD}</code>
+              <br />
+              <span style={{ color: 'var(--text-muted)' }}>
+                First login creates the account in Supabase. Disable email confirmation under Authentication → Email if login fails.
+              </span>
+            </div>
+          )}
 
           {/* Error */}
           {error && (

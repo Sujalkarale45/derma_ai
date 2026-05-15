@@ -93,13 +93,21 @@ export default function Footer() {
             </h5>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {[
-                { icon: <Mail size={14} />, text: 'support@dermaai.app' },
-                { icon: <Phone size={14} />, text: '+91 1800-DERMA-AI' },
-                { icon: <MapPin size={14} />, text: 'Nagpur, Maharashtra, India' },
-              ].map(({ icon, text }) => (
-                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.65)', fontSize: 'var(--font-size-sm)' }}>
-                  <span style={{ color: 'var(--primary)' }}>{icon}</span>
-                  {text}
+                { icon: <Mail size={14} />, text: 'support@dermaai.app', href: 'mailto:support@dermaai.app' },
+                { icon: <Phone size={14} />, text: '+91 74999 19976 (WhatsApp)', href: 'https://wa.me/917499919976?text=Hi%20DERMA%20AI%2C%20I%20have%20a%20question!' },
+                { icon: <MapPin size={14} />, text: 'Nagpur, Maharashtra, India', href: undefined },
+              ].map(({ icon, text, href }) => (
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
+                  <span style={{ color: 'var(--primary)', flexShrink: 0 }}>{icon}</span>
+                  {href ? (
+                    <a href={href} target="_blank" rel="noopener noreferrer"
+                      style={{ color: 'rgba(255,255,255,0.65)', textDecoration: 'none', transition: 'color 0.15s' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'white')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.65)')}
+                    >{text}</a>
+                  ) : (
+                    <span style={{ color: 'rgba(255,255,255,0.65)' }}>{text}</span>
+                  )}
                 </div>
               ))}
             </div>
